@@ -2,13 +2,15 @@
 # base system
 ################################################################################
 
-FROM ubuntu:22.04 as system
+#FROM ubuntu:22.04 as system
+FROM ros:humble-ros-base as system
 
 # Avoid prompts for time zone
 ENV DEBIAN_FRONTEND noninteractive
-ENV TZ=Europe/Paris
+ENV TZ=America/New_York
+
 # Fix issue with libGL on Windows
-ENV LIBGL_ALWAYS_INDIRECT=1
+#ENV LIBGL_ALWAYS_INDIRECT=1
 
 # built-in packages
 RUN apt-get update && apt-get upgrade -y && apt-get install apt-utils -y \
@@ -39,8 +41,8 @@ RUN wget https://github.com/krallin/tini/archive/v0.19.0.tar.gz \
  && export CFLAGS="-DPR_SET_CHILD_SUBREAPER=36 -DPR_GET_CHILD_SUBREAPER=37"; \
     cd tini-0.19.0; cmake . && make && make install \
  && cd ..; rm -r tini-0.19.0 v0.19.0.tar.gz
-
-
+ 
+ 
 # NextCloud
 RUN apt-get update && apt-get install -y nextcloud-desktop
 
@@ -86,7 +88,8 @@ RUN apt-get update \
 ################################################################################
 # builder
 ################################################################################
-FROM ubuntu:22.04 as builder
+#FROM ubuntu:22.04 as builder
+FROM ros:humble-ros-base as builder
 
 RUN apt-get update \
     && apt-get install -y curl ca-certificates gnupg
@@ -115,7 +118,7 @@ RUN apt autoremove && apt autoclean
 # merge
 ################################################################################
 FROM system
-LABEL maintainer="frederic.boulanger@centralesupelec.fr"
+LABEL maintainer="tokuda@bwh.harvard.edu"
 
 COPY --from=builder /src/web/dist/ /usr/local/lib/web/frontend/
 COPY rootfs /
@@ -128,3 +131,24 @@ ENV HOME=/home/ubuntu \
     SHELL=/bin/bash
 HEALTHCHECK --interval=30s --timeout=5s CMD curl --fail http://127.0.0.1:6079/api/health
 ENTRYPOINT ["/startup.sh"]
+ 
+################################################################################
+# Libraries for ISMR 2024 Tutorial
+################################################################################
+WORKDIR /root
+
+#
+# Prerequisite for 3D Slicer
+#
+RUN apt update \
+    && apt install -y git subversion build-essential cmake-curses-gui cmake-qt-gui \
+    && apt install -y qtmultimedia5-dev qttools5-dev libqt5xmlpatterns5-dev libqt5svg5-dev qtwebengine5-dev qtscript5-dev \
+    && apt install -y qtbase5-private-dev libqt5x11extras5-dev \
+    && apt install -y libxt-dev libssl-dev
+
+#
+# Prerequisite for SlicerROS2
+#
+RUN apt update \
+    && apt install -y ~nros-humble-rqt* \
+    && apt install -y ros-humble-turtlesim
