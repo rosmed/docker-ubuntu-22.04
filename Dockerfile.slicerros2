@@ -4,11 +4,6 @@
 # base system
 ################################################################################
 
-
-#FROM ubuntu:20.04 as system
-#FROM ros:foxy-ros-base as system
-#FROM ros:galactic-ros-base as system
-#FROM rosmed/docker-ubuntu-vnc-desktop-slicer:ismr2023 as system
 FROM rosmed/docker-ubuntu-22.04-ros2-slicer:ismr2024 as system
 
 #
@@ -26,12 +21,6 @@ RUN apt install -y python3-vcstool python3-colcon-common-extensions \
 #    && cd /root/ros2_ws/src \
 #    && /bin/bash -c 'source /opt/ros/humble/setup.sh; vcs import --input https://raw.githubusercontent.com/jhu-dvrk/dvrk_robot_ros2/main/dvrk.vcs --recursive'
 
-
-#
-# Build SlicerROS2
-#
-WORKDIR /root
-
 #
 # Build SlicerROS2
 #
@@ -40,7 +29,7 @@ RUN mkdir -p /root/ros2_ws/src \
     && mkdir -p /root/ros2_ws/src \
     && cd /root/ros2_ws/src \
     #&& git clone https://github.com/jhu-cisst/ros2_cisst_msgs.git cisst_msgs \ # Installed as part of dVRK/ciasst
-    && git clone https://github.com/jhu-saw/ros2_sensable_omni_model \
+    #&& git clone https://github.com/jhu-saw/ros2_sensable_omni_model \
     && git clone -b devel https://github.com/rosmed/slicer_ros2_module \
     && cd /root/ros2_ws \
     && /bin/bash -c 'source /opt/ros/humble/setup.sh; colcon build --cmake-args -DSlicer_DIR:PATH=/root/slicer/Slicer-SuperBuild-Release/Slicer-build -DCMAKE_BUILD_TYPE=Release'
@@ -57,7 +46,6 @@ RUN cd /root \
     && chmod 755 start-slicer-ros2.bash 
 
 
-RUN rm /root/slicer/packages/Slicer*.tar.gz
 RUN /bin/bash -c "export EXTENSION_DIR=/root/slicer/packages; xvfb-run --auto-servernum /root/slicer/Slicer-SuperBuild-Release/Slicer-build/Slicer --no-main-window --no-splash --python-script /root/slicer/install-extension.py"
 
 #
@@ -68,18 +56,19 @@ RUN /bin/bash -c "export EXTENSION_DIR=/root/slicer/packages; xvfb-run --auto-se
 WORKDIR /root
 RUN /bin/bash -c "export MODULE_DIR=/root/ros2_ws/build/ROS2/lib/Slicer-5.6/qt-loadable-modules; xvfb-run --auto-servernum /root/slicer/Slicer-SuperBuild-Release/Slicer-build/Slicer --no-main-window --no-splash --python-script /root/slicer/install-module.py"
 
-# Trajectory Tracing
-WORKDIR /root
-RUN cd /root/slicer/modules \
-    && cd /root/slicer/modules \
-    && git clone https://github.com/rosmed/robot_trajectory_trace_SlicerROS2 \
-    && /bin/bash -c "export MODULE_DIR=/root/slicer/modules/robot_trajectory_trace_SlicerROS2/TrajectoryGenerator/RobotTrajectoryGenerator; xvfb-run --auto-servernum /root/slicer/Slicer-SuperBuild-Release/Slicer-build/Slicer --no-main-window --no-splash --python-script /root/slicer/install-module.py"
+# Package SlicerROS2
+# See https://github.com/rosmed/slicer_ros2_module/blob/main/release.md
+WORKDIR /root/slicer/packages
+RUN cd /root/slicer/packages \
+    && pkg_name=`find Slicer-*.tar.gz |sed -e 's/.tar.gz//g'` \
+    && tar zxvf $pkg_name.tar.gz \
+    && cd /root/slicer/Slicer-SuperBuild-Release/Slicer-build \
+    && cp vtkSlicerROS2Module* /root/slicer/packages/$pkg_name/ \
+    && cp lib/Slicer-5.6/qt-loadable-modules/*ROS2* /root/slicer/packages/$pkg_name/lib/Slicer-5.6/qt-loadable-modules \
+    && cd /root/slicer/packages \
+    && find $pkg_name -name "*.so" -exec strip {} \; \
+    && find $pkg_name -name "*.pyc" -exec rm {} \; \
+    && mv $pkg_name $pkg_name-SlicerROS2-humble \
+    && tar cf $pkg_name-SlicerROS2-humble.tar $pkg_name-SlicerROS2-humble \
+    && gzip --best $pkg_name-SlicerROS2-humble.tar
 
-## ISMR Tutorial Data
-#WORKDIR /root
-#RUN cd /root \
-#    && git clone https://github.com/rosmed/ismr2023_files
-
-WORKDIR /root
-RUN cd /root \
-    && tar cvzf /root/ros2_ws.tar.gz ros2_ws
