@@ -27,10 +27,12 @@ RUN tar zxvf /root/slicer/packages/Slicer*humble.tar.gz -C /root/slicer \
 #
 
 WORKDIR /root
-RUN apt install -y python3-vcstool python3-colcon-common-extensions \
+RUN apt update -y \
+    && apt install -y python3-vcstool python3-colcon-common-extensions \
     && apt install -y python3-pykdl \
     && apt install -y libxml2-dev libraw1394-dev libncurses5-dev qtcreator swig sox espeak cmake-curses-gui cmake-qt-gui git subversion gfortran libcppunit-dev libqt5xmlpatterns5-dev libbluetooth-dev \
-    && apt install -y ros-humble-joint-state-publisher* ros-humble-xacro
+    && apt install -y ros-humble-joint-state-publisher* ros-humble-xacro ros-humble-ament-* ros-humble-ign-ros2-control ros-humble-ros2-control* ros-humble-joint-state-broadcaster
+
 
 #WORKDIR /root
 #RUN mkdir -p /root/ros2_ws/src \
@@ -50,28 +52,19 @@ RUN cd /root \
     && chmod 755 start-slicer-ros2.bash
     #    && /bin/bash -c 'rm `find /root/slicer/packages/*.tar.gz`'
 
-RUN /bin/bash -c "export EXTENSION_DIR=/root/slicer/packages; xvfb-run --auto-servernum /root/slicer/Slicer-5.6/Slicer --no-main-window --no-splash --python-script /root/slicer/install-extension.py" \
+RUN /bin/bash -c "export EXTENSION_DIR=/root/slicer/packages; xvfb-run --auto-servernum /root/slicer/Slicer-5.6/Slicer --no-main-window --no-splash --python-script /root/slicer/install-extension.py"
 
 
 #
 # PLUS Toolkit
 #
 WORKDIR /root
-RUN apt install -y libqt5x11extras5-dev qtdeclarative5-dev qml-module-qtquick*
-
-WORKDIR /root
-RUN mkdir -p /root/plus/ \
-    && cd /root/plus \
-    && git clone https://github.com/PlusToolkit/PlusBuild.git \
-    && mkdir PlusBuild-bin \
-    && cd PlusBuild-bin \
-    && cmake ../PlusBuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/root/plus/install -DPLUSBUILD_INSTALL_VTK=ON -DPLUSBUILD_INSTALL_ITK=ON \
-    && make -j4
+# RUN apt install -y libqt5x11extras5-dev qtdeclarative5-dev qml-module-qtquick*
+COPY --from=rosmed/docker-ubuntu-22.04-ros2-slicerros2:ismr2024 /root/plus /root/plus
 
 # ismr 2024 ROS2 files
 WORKDIR /root
 RUN mkdir -p /root/ismr24_ws \
     && cd /root/ismr24_ws \
     && git clone https://github.com/rosmed/ismr24 src \
-#    && cd .. \
-#    && source /opt/ros/humble/setup.bash; colcon build
+    && /bin/bash -c 'source /opt/ros/humble/setup.bash; rosdep update; rosdep install --from-paths src --ignore-src; colcon build --cmake-args -DPlusLib_DIR:PATH=/root/plus/PlusBuild-bin/PlusLib-bin -DVTK_DIR=/root/plus/PlusBuild-bin/vtk-bin'

@@ -72,3 +72,19 @@ RUN cd /root/slicer/packages \
     && tar cf $pkg_name-SlicerROS2-humble.tar $pkg_name-SlicerROS2-humble \
     && gzip --best $pkg_name-SlicerROS2-humble.tar
 
+
+#
+# PLUS Toolkit
+#
+WORKDIR /root
+RUN apt install -y libglvnd-dev libqt5x11extras5-dev qtdeclarative5-dev qml-module-qtquick*
+WORKDIR /root
+RUN mkdir -p /root/plus/ \
+    && cd /root/plus \
+    && git clone https://github.com/PlusToolkit/PlusBuild.git \
+    && mkdir PlusBuild-bin \
+    && cd PlusBuild-bin \
+    && cmake ../PlusBuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/root/plus/install -DPLUSBUILD_INSTALL_VTK=ON -DPLUSBUILD_INSTALL_ITK=ON \
+    && make -j4 \
+    && find . -name "*.o" -exec rm {} \; \
+    && find . -name "*.d" -exec rm {} \;
