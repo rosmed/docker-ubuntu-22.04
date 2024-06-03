@@ -62,9 +62,14 @@ WORKDIR /root
 # RUN apt install -y libqt5x11extras5-dev qtdeclarative5-dev qml-module-qtquick*
 COPY --from=rosmed/docker-ubuntu-22.04-ros2-slicerros2:ismr2024 /root/plus /root/plus
 
+
+
 # ismr 2024 ROS2 files
 WORKDIR /root
+#COPY slicer/ismr24.sh /root
+RUN apt-get install ros-humble-teleop-twist-keyboard
 RUN mkdir -p /root/ismr24_ws \
     && cd /root/ismr24_ws \
     && git clone https://github.com/rosmed/ismr24 src \
     && /bin/bash -c 'source /opt/ros/humble/setup.bash; rosdep update; rosdep install --from-paths src --ignore-src; colcon build --cmake-args -DPlusLib_DIR:PATH=/root/plus/PlusBuild-bin/PlusLib-bin -DVTK_DIR=/root/plus/PlusBuild-bin/vtk-bin'
+RUN /bin/bash -c 'echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/root/plus/PlusBuild-bin/bin:/root/plus/PlusBuild-bin/vtk-bin/lib" >> /root/.bashrc'

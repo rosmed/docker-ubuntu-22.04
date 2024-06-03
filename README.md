@@ -37,12 +37,24 @@ Please note that the colcon build process in this Docker build may fail due to m
 To push the image to Docker Hub:
 ~~~~
 $ docker login -u <<myusername>> 
-$ docker push rosmed/docker-ubuntu-vnc-desktop-base:ismr2023
-$ docker push rosmed/docker-ubuntu-vnc-desktop-slicer:ismr2023
-$ docker push rosmed/docker-ubuntu-vnc-desktop-slicerros2:ismr2023
-$ docker push rosmed/docker-ubuntu-vnc-desktop-slicerros2-lw:ismr2023
+$ docker push rosmed/docker-ubuntu-22.04-ros2:ismr2024
+$ docker push rosmed/docker-ubuntu-22.04-ros2-slicer:ismr2024
+$ docker push rosmed/docker-ubuntu-22.04-ros2-slicerros2:ismr2024
+$ docker push rosmed/docker-ubuntu-22.04-ros2-slicerros2-lw:ismr2024
 ~~~~
 NOTE: User `myusername` has to have write access for the repository.
+
+To save the docker image to a file:
+~~~~
+$ docker save rosmed/docker-ubuntu-22.04-ros2-slicerros2-lw:ismr2024 | gzip > ismr2024-docker-slicerros2.tar.gz
+~~~~
+
+To load the docker image on the computer:
+~~~~
+$ docker load < ismr2024-docker-slicerros2.tar.gz
+~~~~
+
+
 
 Running Docker image
 ---------------------
